@@ -130,29 +130,43 @@ const endpoints = {
 
 module.exports = {
     currentGames: async () => {
-        const twentyFourHoursFromNow = globals.DATE ? new Date(globals.DATE) : new Date();
-        const twentyFourHoursInThePast = globals.DATE ? new Date(globals.DATE) : new Date();
-        twentyFourHoursFromNow.setHours(twentyFourHoursFromNow.getHours() + 24);
-        twentyFourHoursInThePast.setHours(twentyFourHoursInThePast.getHours() - 24);
-        // get games within a 48-hour window centered on now. The game(s) that have a start time closest to now will be treated as the "current" game(s).
-        return fetch(endpoints.schedule(
-            twentyFourHoursInThePast.toISOString().split('T')[0],
-            twentyFourHoursFromNow.toISOString().split('T')[0],
-            parseInt(process.env.TEAM_ID))
-        )
-            .then(async (scheduleResponse) => {
-                const dates = (await scheduleResponse.json()).dates;
-                const games = [];
-                // Collect all games
-// ✅ Collect all games across all dates
-data.dates?.forEach(date => {
-    date.games?.forEach(game => {
-        // Include postseason and other important MLB game types
-        if (["R", "F", "L", "W", "D", "S"].includes(game.gameType)) {
-            games.push(game);
+    const twentyFourHoursFromNow = globals.DATE ? new Date(globals.DATE) : new Date();
+    const twentyFourHoursInThePast = globals.DATE ? new Date(globals.DATE) : new Date();
+
+    twentyFourHoursFromNow.setHours(twentyFourHoursFromNow.getHours() + 24);
+    twentyFourHoursInThePast.setHours(twentyFourHoursInThePast.getHours() - 24);
+
+    // Get games within a 48-hour window centered on now
+    return fetch(endpoints.schedule(
+        twentyFourHoursInThePast.toISOString().split('T')[0],
+        twentyFourHoursFromNow.toISOString().split('T')[0],
+        parseInt(process.env.TEAM_ID))
+    )
+    .then(async (scheduleResponse) => {
+        const data = await scheduleResponse.json();
+        const games = [];
+
+        // ✅ Include all relevant game types (regular + postseason)
+        data.dates?.forEach(date => {
+            date.games?.forEach(game => {
+                if (["R", "F", "L", "W", "D", "S"].includes(game.gameType)) {
+                    games.push(game);
+                }
+            });
+        });
+
+        // If none found, warn
+        if (games.length === 0) {
+            LOGGER.warn("⚠️ No valid games found (R, F, L, W, D, S). Check TEAM_ID or MLB API data.");
         }
+
+        return games;
+    })
+    .catch(function (err) {
+        throw err;
     });
-});
+},
+
 
 // If no games match, warn
 if (games.length === 0) {
