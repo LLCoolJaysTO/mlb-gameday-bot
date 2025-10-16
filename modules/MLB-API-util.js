@@ -130,57 +130,52 @@ const endpoints = {
 
 module.exports = {
     currentGames: async () => {
+    // Define time range (48 hours around current time)
     const twentyFourHoursFromNow = globals.DATE ? new Date(globals.DATE) : new Date();
     const twentyFourHoursInThePast = globals.DATE ? new Date(globals.DATE) : new Date();
 
     twentyFourHoursFromNow.setHours(twentyFourHoursFromNow.getHours() + 24);
     twentyFourHoursInThePast.setHours(twentyFourHoursInThePast.getHours() - 24);
 
-    // Get games within a 48-hour window centered on now
-    return fetch(endpoints.schedule(
-        twentyFourHoursInThePast.toISOString().split('T')[0],
-        twentyFourHoursFromNow.toISOString().split('T')[0],
-        parseInt(process.env.TEAM_ID))
-    )
-    .then(async (scheduleResponse) => {
-        const data = await scheduleResponse.json();
+    // Node 22 sometimes needs fetch defined explicitly
+    const fetchFn = global.fetch ?? (await import("node-fetch")).default;
+
+    try {
+        const response = await fetchFn(
+            endpoints.schedule(
+                twentyFourHoursInThePast.toISOString().split("T")[0],
+                twentyFourHoursFromNow.toISOString().split("T")[0],
+                parseInt(process.env.TEAM_ID)
+            )
+        );
+
+        const data = await response.json();
         const games = [];
 
-        // ✅ Include all relevant game types (regular + postseason)
-        data.dates?.forEach(date => {
-            date.games?.forEach(game => {
-                if (["R", "F", "L", "W", "D", "S"].includes(game.gameType)) {
-                    games.push(game);
+        // ✅ Include regular + postseason game types
+        if (data.dates && Array.isArray(data.dates)) {
+            for (const date of data.dates) {
+                if (date.games && Array.isArray(date.games)) {
+                    for (const game of date.games) {
+                        if (["R", "F", "L", "W", "D", "S"].includes(game.gameType)) {
+                            games.push(game);
+                        }
+                    }
                 }
-            });
-        });
+            }
+        }
 
-        // If none found, warn
         if (games.length === 0) {
             LOGGER.warn("⚠️ No valid games found (R, F, L, W, D, S). Check TEAM_ID or MLB API data.");
         }
 
         return games;
-    })
-    .catch(function (err) {
+    } catch (err) {
+        LOGGER.error("Error retrieving current games:", err);
         throw err;
-    });
+    }
 },
 
-
-// If no games match, warn
-if (games.length === 0) {
-    LOGGER.warn("⚠️ No valid games found (R, F, L, W, D, S). Check TEAM_ID or MLB API data.");
-}
-
-// Return all found games
-return games;
-
-            })
-            .catch(function (err) {
-                throw err;
-            });
-    },
     liveFeed: async (gamePk, fields) => {
         return (await fetch(endpoints.liveFeed(gamePk, fields))).json();
     },
