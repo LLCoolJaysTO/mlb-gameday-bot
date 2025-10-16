@@ -571,27 +571,27 @@ module.exports = {
     },
 
     screenInteraction: async (interaction) => {
-        if (
-    !globalCache.values.nearestGames ||
-    !Array.isArray(globalCache.values.nearestGames) ||
-    globalCache.values.nearestGames.length === 0 ||
-    globalCache.values.nearestGames instanceof Error
-) {
-    console.warn('No active or recent game data found.');
-    await interaction.followUp({
-        content: "No active or recent games found for this team.",
-        ephemeral: false
-    });
-    return;
-        }
-}
+    if (
+        !globalCache.values.nearestGames ||
+        !Array.isArray(globalCache.values.nearestGames) ||
+        globalCache.values.nearestGames.length === 0 ||
+        globalCache.values.nearestGames instanceof Error
+    ) {
+        console.warn('No active or recent game data found.');
+        await interaction.followUp({
+            content: "No active or recent games found for this team.",
+            ephemeral: false
+        });
+        return;
+    }
 
-        if (globalCache.values.game.isDoubleHeader) {
-            return await resolveDoubleHeaderSelection(interaction);
-        } else {
-            return interaction;
-        }
-    },
+    if (globalCache.values.game.isDoubleHeader) {
+        return await resolveDoubleHeaderSelection(interaction);
+    } else {
+        return interaction;
+    }
+},
+
 
     resolvePlayerSelection: async (players, interaction) => {
         const buttons = players.map(player =>
