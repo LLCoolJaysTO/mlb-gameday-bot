@@ -7,16 +7,22 @@ module.exports = {
     .setDescription('View the current game\'s box score.'),
   async execute(interaction) {
     try {
-      // 👇 Add this line
-      await interaction.deferReply();
-
+      // Do NOT call deferReply here — it's already done inside boxScoreHandler
       await interactionHandlers.boxScoreHandler(interaction);
     } catch (e) {
       console.error(e);
+
+      // Handle errors gracefully so the bot doesn't crash
       if (interaction.deferred && !interaction.replied) {
-        await interaction.followUp('There was an error processing this command. If it persists, please reach out to the developer.');
+        await interaction.followUp({
+          content: 'There was an error processing this command. If it persists, please reach out to the developer.',
+          ephemeral: true
+        });
       } else if (!interaction.replied) {
-        await interaction.reply('There was an error processing this command. If it persists, please reach out to the developer.');
+        await interaction.reply({
+          content: 'There was an error processing this command. If it persists, please reach out to the developer.',
+          ephemeral: true
+        });
       }
     }
   }
