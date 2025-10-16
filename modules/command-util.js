@@ -571,12 +571,22 @@ module.exports = {
     },
 
     screenInteraction: async (interaction) => {
-        if (globalCache.values.nearestGames.length === 0 || globalCache.values.nearestGames instanceof Error) {
-            await interaction.followUp({
-                content: "There's no game today!",
-                ephemeral: false
-            });
-        } else if (globalCache.values.game.isDoubleHeader) {
+        if (
+    !globalCache.values.nearestGames ||
+    !Array.isArray(globalCache.values.nearestGames) ||
+    globalCache.values.nearestGames.length === 0 ||
+    globalCache.values.nearestGames instanceof Error
+) {
+    console.warn('No active or recent game data found.');
+    await interaction.followUp({
+        content: "No active or recent games found for this team.",
+        ephemeral: false
+    });
+    return;
+        }
+}
+
+        else if (globalCache.values.game.isDoubleHeader) {
             return await resolveDoubleHeaderSelection(interaction);
         } else {
             return interaction;
