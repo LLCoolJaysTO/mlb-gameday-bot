@@ -586,7 +586,7 @@ module.exports = {
         }
 }
 
-        else if (globalCache.values.game.isDoubleHeader) {
+        if (globalCache.values.game.isDoubleHeader) {
             return await resolveDoubleHeaderSelection(interaction);
         } else {
             return interaction;
