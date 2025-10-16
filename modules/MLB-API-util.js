@@ -144,21 +144,23 @@ module.exports = {
                 const dates = (await scheduleResponse.json()).dates;
                 const games = [];
                 // Collect all games
-dates.forEach((date) => date.games?.forEach(game => games.push(game)));
+// ✅ Collect all games across all dates
+data.dates?.forEach(date => {
+    date.games?.forEach(game => {
+        // Include postseason and other important MLB game types
+        if (["R", "F", "L", "W", "D", "S"].includes(game.gameType)) {
+            games.push(game);
+        }
+    });
+});
 
-// Filter to only include relevant games
-const validStates = ["Preview", "Live", "In Progress", "Final"];
-const filteredGames = games.filter(game => 
-    validStates.includes(game.status.abstractGameState)
-);
-
-// If none found, log a warning
-if (filteredGames.length === 0) {
-    LOGGER.warn("No games found with valid status — check MLB API status values.");
+// If no games match, warn
+if (games.length === 0) {
+    LOGGER.warn("⚠️ No valid games found (R, F, L, W, D, S). Check TEAM_ID or MLB API data.");
 }
 
-// Return the filtered list
-return filteredGames;
+// Return all found games
+return games;
 
             })
             .catch(function (err) {
