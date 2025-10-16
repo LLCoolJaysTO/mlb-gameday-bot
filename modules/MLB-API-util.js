@@ -143,8 +143,23 @@ module.exports = {
             .then(async (scheduleResponse) => {
                 const dates = (await scheduleResponse.json()).dates;
                 const games = [];
-                dates.forEach((date) => date.games?.forEach(game => games.push(game)));
-                return games;
+                // Collect all games
+dates.forEach((date) => date.games?.forEach(game => games.push(game)));
+
+// Filter to only include relevant games
+const validStates = ["Preview", "Live", "In Progress", "Final"];
+const filteredGames = games.filter(game => 
+    validStates.includes(game.status.abstractGameState)
+);
+
+// If none found, log a warning
+if (filteredGames.length === 0) {
+    LOGGER.warn("No games found with valid status — check MLB API status values.");
+}
+
+// Return the filtered list
+return filteredGames;
+
             })
             .catch(function (err) {
                 throw err;
